@@ -4,7 +4,7 @@
 -- al final para la evolución a una versión más robusta.
 -- ============================================================
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 -- ========================================
 -- 1. CONFIGURACIÓN GLOBAL (ventana horaria general)
@@ -79,13 +79,13 @@ as $$
   select id, username
   from admin_users
   where username = p_username
-    and password_hash = crypt(p_password, password_hash);
+    and password_hash = extensions.crypt(p_password, password_hash);
 $$;
 
 -- Ejemplo para crear el primer usuario admin (ejecutar manualmente,
 -- cambiando usuario/contraseña):
 -- insert into admin_users (username, password_hash)
--- values ('admin', crypt('cambiar-esta-clave', gen_salt('bf')));
+-- values ('admin', extensions.crypt('cambiar-esta-clave', extensions.gen_salt('bf')));
 
 -- ========================================
 -- 5. ROW LEVEL SECURITY (versión simple)

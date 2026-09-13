@@ -21,7 +21,7 @@ Sistema web de reserva de canchas. Vite + JavaScript vanilla + Supabase.
 3. Creá el primer usuario administrador ejecutando (cambiando usuario/clave):
    ```sql
    insert into admin_users (username, password_hash)
-   values ('admin', crypt('tu-clave-segura', gen_salt('bf')));
+   values ('admin', extensions.crypt('tu-clave-segura', extensions.gen_salt('bf')));
    ```
 4. Copiá la **URL** del proyecto y la **anon key** (Project Settings → API).
 
