@@ -1,96 +1,41 @@
 -- ============================================================
--- ESQUEMA: Sistema de Reserva de Canchas (versión endurecida)
--- Para un proyecto Supabase NUEVO. Si ya corriste una versión
--- anterior de este archivo, usá sql/harden_security.sql en vez
--- de este (no te va a duplicar tablas).
+-- MIGRACIÓN: Endurecer seguridad
+-- Ejecutar en el SQL Editor de Supabase sobre un proyecto que
+-- ya corrió sql/schema.sql (versión anterior, "simple").
+-- No borra datos existentes.
 -- ============================================================
 
-create extension if not exists pgcrypto with schema extensions;
-
 -- ========================================
--- 1. CONFIGURACIÓN GLOBAL
+-- 1. Sesiones de admin (para el login propio)
 -- ========================================
-create table app_settings (
-  id boolean primary key default true, -- fila única
-  global_open_time time not null default '06:00',
-  global_close_time time not null default '22:00',
-  constraint app_settings_singleton check (id)
-);
-
-insert into app_settings (id) values (true);
-
--- ========================================
--- 2. CANCHAS
--- ========================================
-create table courts (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  is_active boolean not null default true,
-  open_time time not null,
-  close_time time not null,
-  created_at timestamptz not null default now(),
-  constraint open_before_close check (open_time < close_time)
-);
-
--- ========================================
--- 3. RESERVAS
--- ========================================
-create table reservations (
-  id uuid primary key default gen_random_uuid(),
-  court_id uuid not null references courts(id) on delete cascade,
-  cedula text not null,
-  reservation_date date not null,
-  start_time time not null,
-  end_time time not null,
-  status text not null default 'confirmed' check (status in ('confirmed', 'cancelled')),
-  created_at timestamptz not null default now(),
-  cancelled_at timestamptz
-);
-
-create unique index uniq_court_slot
-  on reservations (court_id, reservation_date, start_time)
-  where status = 'confirmed';
-
-create unique index uniq_cedula_per_day
-  on reservations (cedula, reservation_date)
-  where status = 'confirmed';
-
-create index idx_reservations_date on reservations (reservation_date);
-
--- ========================================
--- 4. USUARIOS ADMIN Y SESIONES
--- ========================================
-create table admin_users (
-  id uuid primary key default gen_random_uuid(),
-  username text not null unique,
-  password_hash text not null,
-  created_at timestamptz not null default now()
-);
-
-create table admin_sessions (
+create table if not exists admin_sessions (
   token uuid primary key default gen_random_uuid(),
   admin_id uuid not null references admin_users(id) on delete cascade,
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default (now() + interval '8 hours')
 );
 
--- ========================================
--- 5. ROW LEVEL SECURITY
--- ========================================
-alter table courts enable row level security;
-alter table reservations enable row level security;
-alter table admin_users enable row level security;
 alter table admin_sessions enable row level security;
-alter table app_settings enable row level security;
+-- Sin policies para anon: esta tabla solo se toca desde funciones
+-- security definer (admin_login / admin_logout / assert_admin).
 
--- Lo único público y de solo lectura: nombre/horario de canchas y la
--- config general. admin_users, admin_sessions y reservations NO
--- tienen ninguna policy: cero acceso directo desde anon/authenticated.
--- Todo pasa por las funciones de abajo (security definer).
-create policy "courts_select_public" on courts for select using (true);
-create policy "app_settings_select_public" on app_settings for select using (true);
+-- ========================================
+-- 2. Sacar las policies abiertas de la versión "simple"
+-- ========================================
+drop policy if exists "courts_write_public" on courts;
+drop policy if exists "reservations_write_public" on reservations;
+drop policy if exists "app_settings_write_public" on app_settings;
+drop policy if exists "reservations_select_public" on reservations;
+-- courts_select_public y app_settings_select_public quedan (no son sensibles).
 
--- Vista pública de disponibilidad, sin exponer cédulas.
+-- A partir de acá, "reservations" no tiene NINGUNA policy para anon:
+-- ni lectura ni escritura directa. Todo pasa por funciones de abajo.
+
+-- ========================================
+-- 3. Vista pública de disponibilidad (sin cédula)
+-- ========================================
+-- El front público la usa para calcular horarios libres, sin exponer
+-- la cédula de nadie.
 create or replace view public_court_slots as
 select court_id, reservation_date, start_time, end_time
 from reservations
@@ -99,7 +44,7 @@ where status = 'confirmed';
 grant select on public_court_slots to anon, authenticated;
 
 -- ========================================
--- 6. Helper: validar token de admin
+-- 4. Helper: validar token de admin
 -- ========================================
 create or replace function assert_admin(p_token uuid)
 returns uuid
@@ -124,8 +69,10 @@ end;
 $$;
 
 -- ========================================
--- 7. Login / logout de admin
+-- 5. Login / logout de admin (ahora con sesión)
 -- ========================================
+drop function if exists admin_login(text, text);
+
 create or replace function admin_login(p_username text, p_password text)
 returns table (id uuid, username text, token uuid, expires_at timestamptz)
 language plpgsql
@@ -165,13 +112,8 @@ as $$
   delete from admin_sessions where token = p_token;
 $$;
 
--- Ejemplo para crear el primer usuario admin (ejecutar manualmente,
--- cambiando usuario/contraseña):
--- insert into admin_users (username, password_hash)
--- values ('admin', extensions.crypt('cambiar-esta-clave', extensions.gen_salt('bf')));
-
 -- ========================================
--- 8. Crear una reserva (toda la validación vive acá)
+-- 6. Crear una reserva (TODA la validación server-side)
 -- ========================================
 create or replace function create_reservation(
   p_court_id uuid,
@@ -240,11 +182,15 @@ end;
 $$;
 
 -- ========================================
--- 9. Ver y cancelar MIS reservas (por cédula)
+-- 7. Ver y cancelar MIS reservas (por cédula)
 -- ========================================
 create or replace function get_my_reservations(p_cedula text)
 returns table (
-  id uuid, court_name text, reservation_date date, start_time time, end_time time
+  id uuid,
+  court_name text,
+  reservation_date date,
+  start_time time,
+  end_time time
 )
 language sql
 security definer
@@ -283,7 +229,7 @@ end;
 $$;
 
 -- ========================================
--- 10. Administración de canchas (requiere token)
+-- 8. Administración de canchas (requiere token)
 -- ========================================
 create or replace function admin_create_court(
   p_token uuid, p_name text, p_open_time time, p_close_time time
@@ -354,7 +300,7 @@ end;
 $$;
 
 -- ========================================
--- 11. Administración de reservas (requiere token)
+-- 9. Administración de reservas (requiere token)
 -- ========================================
 create or replace function admin_cancel_reservation(p_token uuid, p_reservation_id uuid)
 returns reservations
@@ -400,16 +346,3 @@ begin
   order by r.start_time;
 end;
 $$;
-
--- ============================================================
--- PENDIENTE PARA UNA PRÓXIMA ETAPA
--- ============================================================
--- 1. Padrón de socios: tabla `members` (documento, tipo de documento,
---    nombre, activo/inactivo) y validar `create_reservation` contra
---    esa tabla en vez de solo el formato de la cédula.
--- 2. Rate limiting / CAPTCHA en el formulario público.
--- 3. PIN o verificación por email/SMS para evitar que un socio
---    reserve con la cédula de otro.
--- 4. Notificar al socio si el admin cancela su reserva.
--- 5. Guardar IP / user-agent en cada reserva para auditoría.
--- ============================================================

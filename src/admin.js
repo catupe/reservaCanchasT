@@ -1,6 +1,7 @@
 import './style.css'
 import {
   adminLogin,
+  adminLogout,
   fetchAllCourts,
   createCourt,
   updateCourt,
@@ -10,7 +11,7 @@ import {
 } from './lib/api.js'
 import { formatTime, toDateInputValue, getToday } from './lib/dateUtils.js'
 
-// --- Sesión simple (front-only). Ver sql/schema.sql -> PENDIENTE PARA ENDURECER ---
+// --- Sesión: el token lo valida la base en CADA llamada (assert_admin). ---
 const SESSION_KEY = 'admin_session'
 
 function saveSession(admin) {
@@ -18,10 +19,32 @@ function saveSession(admin) {
 }
 function getSession() {
   const raw = localStorage.getItem(SESSION_KEY)
-  return raw ? JSON.parse(raw) : null
+  if (!raw) return null
+  const session = JSON.parse(raw)
+  if (session.expires_at && new Date(session.expires_at) <= new Date()) {
+    localStorage.removeItem(SESSION_KEY)
+    return null
+  }
+  return session
 }
 function clearSession() {
   localStorage.removeItem(SESSION_KEY)
+}
+
+// Si la base rechaza el token (expiró en el medio, o se cerró sesión en
+// otra pestaña), volvemos al login en vez de mostrar un error suelto.
+async function withSession(fn) {
+  try {
+    return await fn()
+  } catch (err) {
+    if (err.message && err.message.includes('Sesión inválida')) {
+      clearSession()
+      showLogin()
+      alert('Tu sesión expiró. Iniciá sesión nuevamente.')
+      return null
+    }
+    throw err
+  }
 }
 
 // --- Elementos ---
@@ -47,6 +70,10 @@ const adminDateFilter = document.getElementById('admin-date-filter')
 function setMessage(el, text, type) {
   el.textContent = text
   el.className = 'message' + (type ? ` ${type}` : '')
+}
+
+function currentToken() {
+  return getSession()?.token
 }
 
 function showPanel(admin) {
@@ -79,9 +106,17 @@ loginForm.addEventListener('submit', async (e) => {
   }
 })
 
-logoutBtn.addEventListener('click', () => {
+logoutBtn.addEventListener('click', async () => {
+  const token = currentToken()
   clearSession()
   showLogin()
+  if (token) {
+    try {
+      await adminLogout(token)
+    } catch {
+      // la sesión local ya se borró; si falla el logout remoto no es grave
+    }
+  }
 })
 
 // --- Canchas ---
@@ -134,6 +169,9 @@ courtCancelEditBtn.addEventListener('click', resetCourtForm)
 courtForm.addEventListener('submit', async (e) => {
   e.preventDefault()
   const id = courtIdInput.value
+  const token = currentToken()
+  if (!token) return showLogin()
+
   const payload = {
     name: courtNameInput.value.trim(),
     open_time: courtOpenInput.value,
@@ -146,11 +184,12 @@ courtForm.addEventListener('submit', async (e) => {
     return
   }
 
-  try {
+  await withSession(async () => {
     if (id) {
-      await updateCourt(id, payload)
+      await updateCourt(token, id, payload)
     } else {
       await createCourt({
+        token,
         name: payload.name,
         openTime: payload.open_time,
         closeTime: payload.close_time,
@@ -158,31 +197,30 @@ courtForm.addEventListener('submit', async (e) => {
     }
     resetCourtForm()
     await loadCourts()
-  } catch (err) {
-    alert(err.message || 'No se pudo guardar la cancha.')
-  }
+  }).catch((err) => alert(err.message || 'No se pudo guardar la cancha.'))
 })
 
 async function handleDeleteCourt(id) {
   if (!confirm('¿Eliminar esta cancha? También se perderán sus reservas asociadas.')) return
-  try {
-    await deleteCourt(id)
+  const token = currentToken()
+  if (!token) return showLogin()
+
+  await withSession(async () => {
+    await deleteCourt(token, id)
     await loadCourts()
-  } catch (err) {
-    alert(err.message || 'No se pudo eliminar la cancha.')
-  }
+  }).catch((err) => alert(err.message || 'No se pudo eliminar la cancha.'))
 }
 
 // --- Reservas ---
 async function loadReservations() {
   const dateStr = adminDateFilter.value
-  if (!dateStr) return
-  try {
-    const reservations = await fetchReservationsForAdmin(dateStr)
+  const token = currentToken()
+  if (!dateStr || !token) return
+
+  await withSession(async () => {
+    const reservations = await fetchReservationsForAdmin(token, dateStr)
     renderReservations(reservations)
-  } catch (err) {
-    console.error(err)
-  }
+  }).catch((err) => console.error(err))
 }
 
 function renderReservations(reservations) {
@@ -207,12 +245,12 @@ function renderReservations(reservations) {
     if (cancelBtn) {
       cancelBtn.addEventListener('click', async () => {
         if (!confirm('¿Cancelar esta reserva?')) return
-        try {
-          await cancelReservationAsAdmin(r.id)
+        const token = currentToken()
+        if (!token) return showLogin()
+        await withSession(async () => {
+          await cancelReservationAsAdmin(token, r.id)
           await loadReservations()
-        } catch (err) {
-          alert(err.message || 'No se pudo cancelar.')
-        }
+        }).catch((err) => alert(err.message || 'No se pudo cancelar.'))
       })
     }
   }
