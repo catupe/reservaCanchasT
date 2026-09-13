@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administración - Reserva de Canchas</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <h1>Administración</h1>
+        <a class="admin-link" href="/">Volver al sitio público</a>
+      </header>
+
+      <main class="container">
+        <!-- Vista de login -->
+        <section id="login-view" class="card">
+          <h2>Iniciar sesión</h2>
+          <form id="login-form">
+            <label>
+              Usuario
+              <input type="text" id="admin-username" required />
+            </label>
+            <label>
+              Contraseña
+              <input type="password" id="admin-password" required />
+            </label>
+            <button type="submit">Ingresar</button>
+          </form>
+          <p id="login-message" class="message"></p>
+        </section>
+
+        <!-- Vista de panel (oculta hasta hacer login) -->
+        <section id="panel-view" class="hidden">
+          <div class="panel-header">
+            <span id="admin-welcome"></span>
+            <button id="logout-btn" class="secondary">Cerrar sesión</button>
+          </div>
+
+          <section class="card">
+            <h2>Canchas</h2>
+            <form id="court-form">
+              <input type="hidden" id="court-id" />
+              <label>
+                Nombre
+                <input type="text" id="court-name" placeholder="Ej: Cancha 1" required />
+              </label>
+              <label>
+                Desde
+                <input type="time" id="court-open" required />
+              </label>
+              <label>
+                Hasta
+                <input type="time" id="court-close" required />
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="court-active" checked />
+                Activa (visible para reservar)
+              </label>
+              <div class="form-actions">
+                <button type="submit">Guardar cancha</button>
+                <button type="button" id="court-cancel-edit" class="secondary hidden">Cancelar edición</button>
+              </div>
+            </form>
+            <table id="courts-table" class="data-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Horario</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </section>
+
+          <section class="card">
+            <h2>Reservas</h2>
+            <label>
+              Ver reservas del día
+              <input type="date" id="admin-date-filter" />
+            </label>
+            <table id="reservations-table" class="data-table">
+              <thead>
+                <tr>
+                  <th>Cancha</th>
+                  <th>Horario</th>
+                  <th>Cédula</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </section>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/admin.js"></script>
+  </body>
+</html>
