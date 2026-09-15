@@ -18,18 +18,21 @@ export function getTomorrow() {
   return d
 }
 
+const WEEKDAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
+const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic']
+
 // Únicas dos opciones válidas para reservar: hoy y mañana.
 export function getBookableDates() {
   const today = getToday()
   const tomorrow = getTomorrow()
   return [
-    { value: toDateInputValue(today), label: `Hoy (${formatDateLabel(today)})` },
-    { value: toDateInputValue(tomorrow), label: `Mañana (${formatDateLabel(tomorrow)})` },
+    { value: toDateInputValue(today), dayLabel: 'Hoy', dateLabel: formatDateLabel(today) },
+    { value: toDateInputValue(tomorrow), dayLabel: 'Mañana', dateLabel: formatDateLabel(tomorrow) },
   ]
 }
 
 function formatDateLabel(date) {
-  return date.toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit' })
+  return `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]}`
 }
 
 export function isDateBookable(dateStr) {

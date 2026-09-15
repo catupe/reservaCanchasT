@@ -18,6 +18,35 @@ create table if not exists admin_sessions (
 alter table admin_sessions enable row level security;
 -- Sin policies para anon: esta tabla solo se toca desde funciones
 -- security definer (admin_login / admin_logout / assert_admin).
+fcreate or replace function admin_login(p_username text, p_password text)
+returns table (id uuid, username text, token uuid, expires_at timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_admin admin_users;
+  v_token uuid;
+  v_expires timestamptz;
+begin
+  select * into v_admin
+  from admin_users
+  where admin_users.username = p_username
+    and admin_users.password_hash = extensions.crypt(p_password, admin_users.password_hash);
+
+  if not found then
+    raise exception 'Usuario o contraseña incorrectos.';
+  end if;
+
+  v_expires := now() + interval '8 hours';
+
+  insert into admin_sessions (admin_id, expires_at)
+  values (v_admin.id, v_expires)
+  returning admin_sessions.token into v_token;
+
+  return query select v_admin.id, v_admin.username, v_token, v_expires;
+end;
+$$;
 
 -- ========================================
 -- 2. Sacar las policies abiertas de la versión "simple"
@@ -86,8 +115,8 @@ declare
 begin
   select * into v_admin
   from admin_users
-  where username = p_username
-    and password_hash = extensions.crypt(p_password, password_hash);
+  where admin_users.username = p_username
+    and admin_users.password_hash = extensions.crypt(p_password, admin_users.password_hash);
 
   if not found then
     raise exception 'Usuario o contraseña incorrectos.';
@@ -97,7 +126,7 @@ begin
 
   insert into admin_sessions (admin_id, expires_at)
   values (v_admin.id, v_expires)
-  returning token into v_token;
+  returning admin_sessions.token into v_token;
 
   return query select v_admin.id, v_admin.username, v_token, v_expires;
 end;
@@ -201,6 +230,7 @@ as $$
   join courts c on c.id = r.court_id
   where r.cedula = p_cedula
     and r.status = 'confirmed'
+    and r.reservation_date >= (now() at time zone 'America/Montevideo')::date
   order by r.reservation_date, r.start_time;
 $$;
 

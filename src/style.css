@@ -1,11 +1,20 @@
 :root {
-  --primary: #1e6f46;
-  --primary-dark: #144d31;
-  --border: #d8dee3;
-  --bg: #f5f7f8;
-  --text: #1f2937;
-  --danger: #b3261e;
-  --radius: 8px;
+  --bg: #faf7f1;
+  --card-bg: #ffffff;
+  --card-border: #e7e1d3;
+  --ink: #1f2620;
+  --ink-muted: #8b8677;
+  --teal: #1f6f52;
+  --teal-dark: #154e3a;
+  --teal-soft: #eaf3ee;
+  --orange: #e2572b;
+  --yellow: #fbe38a;
+  --taken-bg: #f1efe9;
+  --taken-text: #adA795;
+  --danger: #c4432b;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
 }
 
 * {
@@ -14,31 +23,467 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
 }
 
+/* ---------- Topbar ---------- */
 .topbar {
-  background: var(--primary);
-  color: white;
-  padding: 16px 24px;
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.topbar h1 {
-  margin: 0;
-  font-size: 1.25rem;
+.brand {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
 }
 
 .admin-link {
-  color: white;
-  text-decoration: underline;
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.admin-link:hover {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+/* ---------- Wizard container ---------- */
+.wizard {
+  max-width: 900px;
+  margin: 0 auto 48px;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.step-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+}
+
+.step-card-subtle {
+  background: transparent;
+  border-style: dashed;
+}
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.step-eyebrow {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--orange);
+  text-transform: uppercase;
+}
+
+.step-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.step-rule {
+  width: 22px;
+  height: 1px;
+  background: var(--orange);
+  opacity: 0.6;
+}
+
+.step-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.meta-icon {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.step-title {
+  margin: 0 0 20px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.step-title-small {
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+}
+
+/* ---------- Paso 1: fecha ---------- */
+.date-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.option-card {
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  color: var(--ink);
+  padding: 12px 20px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  min-width: 150px;
+  transition: border-color 0.15s ease;
+}
+
+.option-card:hover {
+  border-color: var(--teal);
+}
+
+.option-card .option-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.option-card .option-value {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.option-card.selected {
+  background: var(--yellow);
+  border-color: var(--teal);
+}
+
+.option-card.selected .option-label {
+  color: var(--teal-dark);
+}
+
+/* ---------- Paso 2: cancha ---------- */
+.court-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.court-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  color: var(--ink);
+  padding: 14px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.court-card:hover {
+  border-color: var(--teal);
+}
+
+.court-card.selected {
+  border-color: var(--teal);
+  border-width: 2px;
+  box-shadow: 0 0 0 1px var(--teal);
+}
+
+.court-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--teal-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.court-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--yellow);
+  fill: none;
+  stroke-width: 1.4;
+}
+
+.court-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.court-hours {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+.court-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.court-card.selected .court-check {
+  background: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.court-check svg {
+  width: 12px;
+  height: 12px;
+  stroke: var(--teal-dark);
+  stroke-width: 3;
+  fill: none;
+  opacity: 0;
+}
+
+.court-card.selected .court-check svg {
+  opacity: 1;
+}
+
+.court-card.inactive-hint {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- Paso 3: hora ---------- */
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.slots-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ink-muted);
   font-size: 0.9rem;
 }
 
+.slot-btn {
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  padding: 12px 8px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--teal-dark);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.slot-btn:hover:not(:disabled) {
+  border-color: var(--teal);
+}
+
+.slot-btn.selected {
+  background: var(--teal-dark);
+  border-color: var(--teal-dark);
+  color: #fff;
+}
+
+.slot-btn:disabled {
+  background: var(--taken-bg);
+  border-color: var(--taken-bg);
+  color: var(--taken-text);
+  cursor: not-allowed;
+}
+
+.slot-btn .slot-sub {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+  color: var(--danger);
+}
+
+.slot-btn:disabled .slot-sub {
+  color: var(--taken-text);
+}
+
+.slots-legend {
+  display: flex;
+  gap: 18px;
+  margin-top: 18px;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.slots-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-free {
+  background: var(--teal);
+}
+
+.dot-taken {
+  background: var(--taken-text);
+}
+
+/* ---------- Formularios ---------- */
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 320px;
+}
+
+.booking-form-inline {
+  flex-direction: row;
+  align-items: flex-end;
+  max-width: none;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+input {
+  padding: 12px 14px;
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--card-bg);
+  color: var(--ink);
+}
+
+input:focus,
+.option-card:focus-visible,
+.court-card:focus-visible,
+.slot-btn:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+button {
+  padding: 13px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--teal-dark);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:hover:not(:disabled) {
+  background: var(--teal);
+}
+
+button:disabled {
+  background: var(--taken-bg);
+  color: var(--taken-text);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--teal-dark);
+  border: 1.5px solid var(--card-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--teal);
+  background: transparent;
+}
+
+.message {
+  min-height: 1.2em;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.message.error {
+  color: var(--danger);
+}
+
+.message.success {
+  color: var(--teal-dark);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- Reservas propias (buscar/cancelar) ---------- */
+.reservation-item {
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-bg);
+}
+
+/* ============================================================
+   Panel de administración
+   ============================================================ */
 .container {
   max-width: 640px;
   margin: 24px auto;
@@ -49,9 +494,9 @@ body {
 }
 
 .card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
   padding: 20px;
 }
 
@@ -60,18 +505,18 @@ body {
   font-size: 1.1rem;
 }
 
-form {
+.card form {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-label {
+.card label {
   display: flex;
   flex-direction: column;
   gap: 4px;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .checkbox-label {
@@ -80,55 +525,18 @@ label {
   gap: 8px;
 }
 
-input,
 select {
   padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-family: inherit;
 }
 
-button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: var(--radius);
-  background: var(--primary);
-  color: white;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-button:hover {
-  background: var(--primary-dark);
-}
-
 button.secondary {
-  background: white;
-  color: var(--primary);
-  border: 1px solid var(--primary);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.message {
-  min-height: 1.2em;
-  font-size: 0.9rem;
-}
-
-.message.error {
-  color: var(--danger);
-}
-
-.message.success {
-  color: var(--primary-dark);
-}
-
-.hidden {
-  display: none !important;
+  background: var(--card-bg);
+  color: var(--teal-dark);
+  border: 1.5px solid var(--card-border);
 }
 
 .panel-header {
@@ -147,36 +555,26 @@ button:disabled {
   width: 100%;
   border-collapse: collapse;
   margin-top: 16px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .data-table th,
 .data-table td {
   text-align: left;
   padding: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.reservation-item {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .status-badge {
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .status-confirmed {
-  background: #e3f5ea;
-  color: var(--primary-dark);
+  background: var(--teal-soft);
+  color: var(--teal-dark);
 }
 
 .status-cancelled {
