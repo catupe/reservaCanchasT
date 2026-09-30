@@ -80,6 +80,8 @@ function showPanel(admin) {
   loginView.classList.add('hidden')
   panelView.classList.remove('hidden')
   adminWelcome.textContent = `Conectado como ${admin.username}`
+  adminWelcome.classList.remove('hidden')
+  logoutBtn.classList.remove('hidden')
   loadCourts()
   adminDateFilter.value = toDateInputValue(getToday())
   loadReservations()
@@ -88,6 +90,8 @@ function showPanel(admin) {
 function showLogin() {
   panelView.classList.add('hidden')
   loginView.classList.remove('hidden')
+  adminWelcome.classList.add('hidden')
+  logoutBtn.classList.add('hidden')
 }
 
 // --- Login ---
@@ -131,15 +135,19 @@ async function loadCourts() {
 
 function renderCourts(courts) {
   courtsTableBody.innerHTML = ''
+  if (courts.length === 0) {
+    courtsTableBody.innerHTML = '<tr><td colspan="4">Todavía no hay canchas cargadas.</td></tr>'
+    return
+  }
   for (const c of courts) {
     const tr = document.createElement('tr')
     tr.innerHTML = `
-      <td>${c.name}</td>
-      <td>${formatTime(c.open_time)} a ${formatTime(c.close_time)}</td>
-      <td>${c.is_active ? 'Activa' : 'Inactiva'}</td>
-      <td>
-        <button class="secondary edit-court" data-id="${c.id}">Editar</button>
-        <button class="secondary delete-court" data-id="${c.id}">Eliminar</button>
+      <td data-label="Nombre">${c.name}</td>
+      <td data-label="Horario">${formatTime(c.open_time)} a ${formatTime(c.close_time)}</td>
+      <td data-label="Estado">${c.is_active ? 'Activa' : 'Inactiva'}</td>
+      <td data-label="">
+        <button class="btn-secondary btn-small edit-court" data-id="${c.id}">Editar</button>
+        <button class="btn-secondary btn-small delete-court" data-id="${c.id}">Eliminar</button>
       </td>
     `
     courtsTableBody.appendChild(tr)
@@ -234,11 +242,11 @@ function renderReservations(reservations) {
     const statusClass = r.status === 'confirmed' ? 'status-confirmed' : 'status-cancelled'
     const statusLabel = r.status === 'confirmed' ? 'Confirmada' : 'Cancelada'
     tr.innerHTML = `
-      <td>${r.courts?.name || ''}</td>
-      <td>${formatTime(r.start_time)} a ${formatTime(r.end_time)}</td>
-      <td>${r.cedula}</td>
-      <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-      <td>${r.status === 'confirmed' ? `<button class="secondary cancel-res" data-id="${r.id}">Cancelar</button>` : ''}</td>
+      <td data-label="Cancha">${r.courts?.name || ''}</td>
+      <td data-label="Horario">${formatTime(r.start_time)} a ${formatTime(r.end_time)}</td>
+      <td data-label="Cédula">${r.cedula}</td>
+      <td data-label="Estado"><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+      <td data-label="">${r.status === 'confirmed' ? `<button class="btn-secondary btn-small cancel-res" data-id="${r.id}">Cancelar</button>` : ''}</td>
     `
     reservationsTableBody.appendChild(tr)
     const cancelBtn = tr.querySelector('.cancel-res')

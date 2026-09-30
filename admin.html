@@ -4,27 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Administración - Reserva de Canchas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
-      <header class="topbar">
-        <h1>Administración</h1>
-        <a class="admin-link" href="/">Volver al sitio público</a>
+      <header class="topbar admin-topbar">
+        <span class="brand">Administración</span>
+        <nav class="topbar-nav">
+          <span id="admin-welcome" class="welcome-pill hidden"></span>
+          <a class="admin-link" href="/">Sitio público</a>
+          <button id="logout-btn" class="btn-secondary btn-small hidden" type="button">Cerrar sesión</button>
+        </nav>
       </header>
 
       <main class="container">
         <!-- Vista de login -->
-        <section id="login-view" class="card">
-          <h2>Iniciar sesión</h2>
-          <form id="login-form">
-            <label>
-              Usuario
-              <input type="text" id="admin-username" required />
+        <section id="login-view" class="step-card login-card">
+          <h2 class="step-title step-title-small">Iniciar sesión</h2>
+          <form id="login-form" class="booking-form">
+            <label class="field">
+              <span>Usuario</span>
+              <input type="text" id="admin-username" autocomplete="username" required />
             </label>
-            <label>
-              Contraseña
-              <input type="password" id="admin-password" required />
+            <label class="field">
+              <span>Contraseña</span>
+              <input type="password" id="admin-password" autocomplete="current-password" required />
             </label>
             <button type="submit">Ingresar</button>
           </form>
@@ -32,68 +42,73 @@
         </section>
 
         <!-- Vista de panel (oculta hasta hacer login) -->
-        <section id="panel-view" class="hidden">
-          <div class="panel-header">
-            <span id="admin-welcome"></span>
-            <button id="logout-btn" class="secondary">Cerrar sesión</button>
-          </div>
+        <section id="panel-view" class="hidden panel-stack">
+          <section class="step-card">
+            <p class="step-eyebrow"><span class="step-rule"></span>Canchas</p>
+            <h2 class="step-title step-title-small">Gestionar canchas</h2>
 
-          <section class="card">
-            <h2>Canchas</h2>
-            <form id="court-form">
+            <form id="court-form" class="court-form-grid">
               <input type="hidden" id="court-id" />
-              <label>
-                Nombre
+              <label class="field field-name">
+                <span>Nombre</span>
                 <input type="text" id="court-name" placeholder="Ej: Cancha 1" required />
               </label>
-              <label>
-                Desde
+              <label class="field">
+                <span>Desde</span>
                 <input type="time" id="court-open" required />
               </label>
-              <label>
-                Hasta
+              <label class="field">
+                <span>Hasta</span>
                 <input type="time" id="court-close" required />
               </label>
-              <label class="checkbox-label">
+              <label class="field checkbox-field">
                 <input type="checkbox" id="court-active" checked />
-                Activa (visible para reservar)
+                <span>Activa</span>
               </label>
               <div class="form-actions">
                 <button type="submit">Guardar cancha</button>
-                <button type="button" id="court-cancel-edit" class="secondary hidden">Cancelar edición</button>
+                <button type="button" id="court-cancel-edit" class="btn-secondary hidden">Cancelar edición</button>
               </div>
             </form>
-            <table id="courts-table" class="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Horario</th>
-                  <th>Estado</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+
+            <div class="table-wrap">
+              <table id="courts-table" class="data-table responsive-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Horario</th>
+                    <th>Estado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </section>
 
-          <section class="card">
-            <h2>Reservas</h2>
-            <label>
-              Ver reservas del día
+          <section class="step-card">
+            <p class="step-eyebrow"><span class="step-rule"></span>Reservas</p>
+            <h2 class="step-title step-title-small">Reservas por día</h2>
+
+            <label class="field date-filter-field">
+              <span>Ver reservas del</span>
               <input type="date" id="admin-date-filter" />
             </label>
-            <table id="reservations-table" class="data-table">
-              <thead>
-                <tr>
-                  <th>Cancha</th>
-                  <th>Horario</th>
-                  <th>Cédula</th>
-                  <th>Estado</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+
+            <div class="table-wrap">
+              <table id="reservations-table" class="data-table responsive-table">
+                <thead>
+                  <tr>
+                    <th>Cancha</th>
+                    <th>Horario</th>
+                    <th>Cédula</th>
+                    <th>Estado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </section>
         </section>
       </main>
