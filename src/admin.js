@@ -1,6 +1,7 @@
 import './style.css'
 import {
   adminLogin,
+  adminLogout,
   fetchAllCourts,
   createCourt,
   updateCourt,
@@ -10,7 +11,7 @@ import {
 } from './lib/api.js'
 import { formatTime, toDateInputValue, getToday } from './lib/dateUtils.js'
 
-// --- Sesión simple (front-only). Ver sql/schema.sql -> PENDIENTE PARA ENDURECER ---
+// --- Sesión: el token lo valida la base en CADA llamada (assert_admin). ---
 const SESSION_KEY = 'admin_session'
 
 function saveSession(admin) {
@@ -18,10 +19,32 @@ function saveSession(admin) {
 }
 function getSession() {
   const raw = localStorage.getItem(SESSION_KEY)
-  return raw ? JSON.parse(raw) : null
+  if (!raw) return null
+  const session = JSON.parse(raw)
+  if (session.expires_at && new Date(session.expires_at) <= new Date()) {
+    localStorage.removeItem(SESSION_KEY)
+    return null
+  }
+  return session
 }
 function clearSession() {
   localStorage.removeItem(SESSION_KEY)
+}
+
+// Si la base rechaza el token (expiró en el medio, o se cerró sesión en
+// otra pestaña), volvemos al login en vez de mostrar un error suelto.
+async function withSession(fn) {
+  try {
+    return await fn()
+  } catch (err) {
+    if (err.message && err.message.includes('Sesión inválida')) {
+      clearSession()
+      showLogin()
+      alert('Tu sesión expiró. Iniciá sesión nuevamente.')
+      return null
+    }
+    throw err
+  }
 }
 
 // --- Elementos ---
@@ -49,10 +72,16 @@ function setMessage(el, text, type) {
   el.className = 'message' + (type ? ` ${type}` : '')
 }
 
+function currentToken() {
+  return getSession()?.token
+}
+
 function showPanel(admin) {
   loginView.classList.add('hidden')
   panelView.classList.remove('hidden')
   adminWelcome.textContent = `Conectado como ${admin.username}`
+  adminWelcome.classList.remove('hidden')
+  logoutBtn.classList.remove('hidden')
   loadCourts()
   adminDateFilter.value = toDateInputValue(getToday())
   loadReservations()
@@ -61,6 +90,8 @@ function showPanel(admin) {
 function showLogin() {
   panelView.classList.add('hidden')
   loginView.classList.remove('hidden')
+  adminWelcome.classList.add('hidden')
+  logoutBtn.classList.add('hidden')
 }
 
 // --- Login ---
@@ -79,9 +110,17 @@ loginForm.addEventListener('submit', async (e) => {
   }
 })
 
-logoutBtn.addEventListener('click', () => {
+logoutBtn.addEventListener('click', async () => {
+  const token = currentToken()
   clearSession()
   showLogin()
+  if (token) {
+    try {
+      await adminLogout(token)
+    } catch {
+      // la sesión local ya se borró; si falla el logout remoto no es grave
+    }
+  }
 })
 
 // --- Canchas ---
@@ -96,15 +135,19 @@ async function loadCourts() {
 
 function renderCourts(courts) {
   courtsTableBody.innerHTML = ''
+  if (courts.length === 0) {
+    courtsTableBody.innerHTML = '<tr><td colspan="4">Todavía no hay canchas cargadas.</td></tr>'
+    return
+  }
   for (const c of courts) {
     const tr = document.createElement('tr')
     tr.innerHTML = `
-      <td>${c.name}</td>
-      <td>${formatTime(c.open_time)} a ${formatTime(c.close_time)}</td>
-      <td>${c.is_active ? 'Activa' : 'Inactiva'}</td>
-      <td>
-        <button class="secondary edit-court" data-id="${c.id}">Editar</button>
-        <button class="secondary delete-court" data-id="${c.id}">Eliminar</button>
+      <td data-label="Nombre">${c.name}</td>
+      <td data-label="Horario">${formatTime(c.open_time)} a ${formatTime(c.close_time)}</td>
+      <td data-label="Estado">${c.is_active ? 'Activa' : 'Inactiva'}</td>
+      <td data-label="">
+        <button class="btn-secondary btn-small edit-court" data-id="${c.id}">Editar</button>
+        <button class="btn-secondary btn-small delete-court" data-id="${c.id}">Eliminar</button>
       </td>
     `
     courtsTableBody.appendChild(tr)
@@ -134,6 +177,9 @@ courtCancelEditBtn.addEventListener('click', resetCourtForm)
 courtForm.addEventListener('submit', async (e) => {
   e.preventDefault()
   const id = courtIdInput.value
+  const token = currentToken()
+  if (!token) return showLogin()
+
   const payload = {
     name: courtNameInput.value.trim(),
     open_time: courtOpenInput.value,
@@ -146,11 +192,12 @@ courtForm.addEventListener('submit', async (e) => {
     return
   }
 
-  try {
+  await withSession(async () => {
     if (id) {
-      await updateCourt(id, payload)
+      await updateCourt(token, id, payload)
     } else {
       await createCourt({
+        token,
         name: payload.name,
         openTime: payload.open_time,
         closeTime: payload.close_time,
@@ -158,31 +205,30 @@ courtForm.addEventListener('submit', async (e) => {
     }
     resetCourtForm()
     await loadCourts()
-  } catch (err) {
-    alert(err.message || 'No se pudo guardar la cancha.')
-  }
+  }).catch((err) => alert(err.message || 'No se pudo guardar la cancha.'))
 })
 
 async function handleDeleteCourt(id) {
   if (!confirm('¿Eliminar esta cancha? También se perderán sus reservas asociadas.')) return
-  try {
-    await deleteCourt(id)
+  const token = currentToken()
+  if (!token) return showLogin()
+
+  await withSession(async () => {
+    await deleteCourt(token, id)
     await loadCourts()
-  } catch (err) {
-    alert(err.message || 'No se pudo eliminar la cancha.')
-  }
+  }).catch((err) => alert(err.message || 'No se pudo eliminar la cancha.'))
 }
 
 // --- Reservas ---
 async function loadReservations() {
   const dateStr = adminDateFilter.value
-  if (!dateStr) return
-  try {
-    const reservations = await fetchReservationsForAdmin(dateStr)
+  const token = currentToken()
+  if (!dateStr || !token) return
+
+  await withSession(async () => {
+    const reservations = await fetchReservationsForAdmin(token, dateStr)
     renderReservations(reservations)
-  } catch (err) {
-    console.error(err)
-  }
+  }).catch((err) => console.error(err))
 }
 
 function renderReservations(reservations) {
@@ -196,23 +242,23 @@ function renderReservations(reservations) {
     const statusClass = r.status === 'confirmed' ? 'status-confirmed' : 'status-cancelled'
     const statusLabel = r.status === 'confirmed' ? 'Confirmada' : 'Cancelada'
     tr.innerHTML = `
-      <td>${r.courts?.name || ''}</td>
-      <td>${formatTime(r.start_time)} a ${formatTime(r.end_time)}</td>
-      <td>${r.cedula}</td>
-      <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-      <td>${r.status === 'confirmed' ? `<button class="secondary cancel-res" data-id="${r.id}">Cancelar</button>` : ''}</td>
+      <td data-label="Cancha">${r.courts?.name || ''}</td>
+      <td data-label="Horario">${formatTime(r.start_time)} a ${formatTime(r.end_time)}</td>
+      <td data-label="Cédula">${r.cedula}</td>
+      <td data-label="Estado"><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+      <td data-label="">${r.status === 'confirmed' ? `<button class="btn-secondary btn-small cancel-res" data-id="${r.id}">Cancelar</button>` : ''}</td>
     `
     reservationsTableBody.appendChild(tr)
     const cancelBtn = tr.querySelector('.cancel-res')
     if (cancelBtn) {
       cancelBtn.addEventListener('click', async () => {
         if (!confirm('¿Cancelar esta reserva?')) return
-        try {
-          await cancelReservationAsAdmin(r.id)
+        const token = currentToken()
+        if (!token) return showLogin()
+        await withSession(async () => {
+          await cancelReservationAsAdmin(token, r.id)
           await loadReservations()
-        } catch (err) {
-          alert(err.message || 'No se pudo cancelar.')
-        }
+        }).catch((err) => alert(err.message || 'No se pudo cancelar.'))
       })
     }
   }

@@ -4,54 +4,86 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reserva de Canchas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
       <header class="topbar">
-        <h1>Reserva de Canchas</h1>
+        <span class="brand">Reserva de Canchas</span>
         <a class="admin-link" href="/admin.html">Administración</a>
       </header>
 
-      <main class="container">
-        <section class="card">
-          <h2>Nueva reserva</h2>
-          <form id="booking-form">
-            <label>
-              Cédula
-              <input type="text" id="cedula" placeholder="Ej: 45678912" required />
-            </label>
+      <main class="wizard">
+        <!-- Paso 1: día -->
+        <section class="step-card">
+          <div class="step-header">
+            <p class="step-eyebrow"><span class="step-num">01</span><span class="step-rule"></span>Día de juego</p>
+            <p class="step-meta">
+              <svg viewBox="0 0 24 24" class="meta-icon"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              Horarios de 1 hora
+            </p>
+          </div>
+          <h2 class="step-title">¿Cuándo venís?</h2>
+          <div class="date-options" id="date-options"></div>
+        </section>
 
-            <label>
-              Día
-              <select id="date-select" required></select>
-            </label>
+        <!-- Paso 2: cancha -->
+        <section class="step-card">
+          <div class="step-header">
+            <p class="step-eyebrow"><span class="step-num">02</span><span class="step-rule"></span>Cancha</p>
+            <p class="step-meta" id="courts-meta"></p>
+          </div>
+          <h2 class="step-title">Elegí dónde jugar</h2>
+          <div class="court-options" id="court-options"></div>
+        </section>
 
-            <label>
-              Cancha
-              <select id="court-select" required></select>
-            </label>
+        <!-- Paso 3: hora -->
+        <section class="step-card">
+          <div class="step-header">
+            <p class="step-eyebrow"><span class="step-num">03</span><span class="step-rule"></span>Hora</p>
+            <p class="step-meta">Hora local · Montevideo</p>
+          </div>
+          <h2 class="step-title">Encontrá tu momento</h2>
+          <div class="slots-grid" id="slots-grid">
+            <p class="slots-hint">Elegí un día y una cancha para ver los horarios.</p>
+          </div>
+          <div class="slots-legend">
+            <span><i class="dot dot-free"></i>Libre</span>
+            <span><i class="dot dot-taken"></i>Ocupada</span>
+          </div>
+        </section>
 
-            <label>
-              Horario
-              <select id="slot-select" required disabled>
-                <option value="">Elegí primero cancha y día</option>
-              </select>
+        <!-- Paso 4: confirmar -->
+        <section class="step-card">
+          <div class="step-header">
+            <p class="step-eyebrow"><span class="step-num">04</span><span class="step-rule"></span>Confirmar</p>
+          </div>
+          <h2 class="step-title">Reservá con tu cédula</h2>
+          <form id="booking-form" class="booking-form">
+            <label class="field">
+              <span>Cédula</span>
+              <input type="text" id="cedula" placeholder="Ej: 45678912" inputmode="numeric" required />
             </label>
-
-            <button type="submit">Reservar</button>
+            <button type="submit" id="booking-submit" disabled>Elegí día, cancha y hora</button>
           </form>
           <p id="booking-message" class="message"></p>
         </section>
 
-        <section class="card">
-          <h2>Cancelar una reserva</h2>
-          <form id="lookup-form">
-            <label>
-              Cédula
-              <input type="text" id="lookup-cedula" placeholder="Ej: 45678912" required />
+        <!-- Cancelar reserva -->
+        <section class="step-card step-card-subtle">
+          <h2 class="step-title step-title-small">¿Ya reservaste y necesitás cancelar?</h2>
+          <form id="lookup-form" class="booking-form booking-form-inline">
+            <label class="field">
+              <span>Cédula</span>
+              <input type="text" id="lookup-cedula" placeholder="Ej: 45678912" inputmode="numeric" required />
             </label>
-            <button type="submit">Buscar mis reservas</button>
+            <button type="submit" class="btn-secondary">Buscar mis reservas</button>
           </form>
           <div id="my-reservations"></div>
         </section>
